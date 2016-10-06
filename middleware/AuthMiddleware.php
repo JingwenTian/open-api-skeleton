@@ -15,14 +15,22 @@ use helper\Api\ApiRequestPathRule;
 class AuthMiddleware 
 {
 
+    const PROTOCOL_TOKEN  = 'token';     //表示AccessToken 免签名通讯协议
+    const PROTOCOL_SECRET = 'signature'; //表示AppId/AppSecret 签名通讯协议
+
+    const ACCESS_TOKEN_FETCH_PATH  = '/api/token'; //获取 access token 的路径
+
     protected $logger;
 
+    /**
+     * 默认配置
+     */
     private $options = [
+                            "protocol"      => null, //通讯协议,默认为signature
 					    	"secure" 		=> true, // 是否开启安全认证(非https域名白名单)
 					    	"relaxed" 		=> ["localhost", "127.0.0.1"], //允许请求的安全域
 					    	"path" 			=> null, //需要鉴权的路径
 					        "passthrough" 	=> null, //无需鉴权的路径
-					        'access'		=> null, //获取访问凭证的路径(此路径不校验 Access Token)
 					    ];
 
 	public function __construct( array $options = [] ) 
@@ -79,14 +87,13 @@ class AuthMiddleware
 
         	$authHelper = new ApiVerifyAuth();
 
-           	if ($path != $this->options["access"]) {
-           		$authHelper->_checkAccessToken($params);
-           	} else {
-           		$authHelper->_verifyAuth($params);
-           	}
+            if (self::PROTOCOL_TOKEN == $this->options["protocol"]) {
+                $authHelper->_checkAccessToken($params);
+            } else {
+                $authHelper->_checkSignature($params);
+            }
 
         } catch (ApiException $e) {
-        	$this->log(LogLevel::DEBUG, $e->getMessage(), [$params]);
             throw new ApiException($e->getMessage(), $e->getCode());
         }
 
@@ -179,24 +186,23 @@ class AuthMiddleware
     }
 
     /**
-     * 获取AccessToken的路径
+     * 获取通讯协议
      *
      * @return string
      */
-    public function getAccess()
+    public function getProtocol()
     {
-        return $this->options["access"];
+        return $this->options["protocol"];
     }
 
     /**
-     * 设置AccessToken的路径
+     * 设置通讯协议
      *
-     * @param string|string[] $$path
-     * @return self
+     * @param [type] $method [description]
      */
-    public function setAccess($accessPath)
+    public function setProtocol($protocol)
     {
-        $this->options["access"] = $accessPath;
+        $this->options["protocol"] = $protocol;
         return $this;
     }
 
@@ -309,6 +315,17 @@ class AuthMiddleware
      */
     private function hydrate(array $data = [])
     {
+        if (
+            isset($data['protocol']) && 
+            self::PROTOCOL_TOKEN == $data['protocol']
+        ) {
+            if (isset($data['passthrough'])) {
+                is_array($data['passthrough']) && array_push($data['passthrough'], self::ACCESS_TOKEN_FETCH_PATH);
+                is_string($data['passthrough']) && $data['passthrough'] = [$data['passthrough'], self::ACCESS_TOKEN_FETCH_PATH];
+            } else {
+                $data['passthrough'] = self::ACCESS_TOKEN_FETCH_PATH;
+            }
+        }
         foreach ($data as $key => $value) {
             $method = "set" . ucfirst($key);
             if (method_exists($this, $method)) {

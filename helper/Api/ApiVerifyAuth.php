@@ -23,7 +23,6 @@ class ApiVerifyAuth
     const APPID 						= '888888';
     const APPSECRET 					= 'qazwsxcderfvbgtyhnmju';
     
-
     /**
      * 获取 Token
      */
@@ -36,7 +35,7 @@ class ApiVerifyAuth
 
 		$data = [
 					$appId, 
-					date('U') + ApiConf::OAUTH2_DEFAULT_ACCESS_TOKEN_LIFETIME 
+					date('U') + ApiConf::OAUTH2_ACCESS_TOKEN_EXPIRES 
 				];
 		
 		return  $hashids->encode($data);
@@ -68,7 +67,7 @@ class ApiVerifyAuth
      *
      * @return [type] [description]
      */
-    public function _verifyAuth( $params = [], $method = '' )
+    public function _checkSignature( $params = [], $method = '' )
     {
     	$this->_setRequestData($params);
     	return $this->_handleRequestApiAuthIsLegally($method);
@@ -137,10 +136,11 @@ class ApiVerifyAuth
         $appId      = array_get($this->_requestData, 'app_id', false);
         $timestamp  = array_get($this->_requestData, 'timestamp', false);
         $signature  = array_get($this->_requestData, 'signature', false);
+        $nonce      = array_get($this->_requestData, 'nonce', false);
 
         //检查系统参数
         if (
-        	empty($appId) || empty($timestamp) || empty($signature)
+        	empty($appId) || empty($timestamp) || empty($signature) || empty($nonce)
         ) {
             throw new ApiException(self::SYS_PARAM_ERROR, ApiConf::SYS_PARAM_ERROR_CODE);
         }

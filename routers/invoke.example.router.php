@@ -9,7 +9,45 @@ $app->get('/example', function() {
 	$appID 		= '888888';
     $appSecret 	= 'qazwsxcderfvbgtyhnmju';
 
-    // 生成签名
+    // ==================================================================
+    // AccessToken 免签名通讯协议 示例
+    // ------------------------------------------------------------------
+    
+    // STEP 1: 根据 APPID,APPSECRET 获取 ACCESS_TOKEN; GET 或 POST 请求
+
+	$params = [
+		        'app_id'    => $appID,
+		        'app_secret'=> $appSecret,
+		    ];
+	$url = 'http://php.dev/api/token';
+	$response = curl($url, $params, [], 'GET');
+	$accessToken = isset($response['data']['access_token']) ? $response['data']['access_token'] : ''; //3600秒有效期
+
+	// STEP 2: 携带 ACCESS_TOKEN 请求测试接口
+
+	$url = 'http://php.dev/api/v1/products';
+	$params = [
+				'access_token' => $accessToken,
+		    ];
+	$result = curl($url, $params, [], 'GET');
+
+	p($result);die;
+
+
+    // ==================================================================
+    // AppId/AppSecret 签名通讯协议
+    // ------------------------------------------------------------------
+
+    $params = [
+    			// 系统参数
+		        'app_id'    => $appID,
+		        'timestamp' => date('Y-m-d H:i:s'),
+		        'nonce'		=> rand(),
+		        // 业务参数
+		        'product_id'=> 2
+		    ];
+
+    // STEP 1 根据请求参数生成签名
     $createSign = function($data) use ($appSecret) {
 
     	ksort($data);
@@ -28,50 +66,15 @@ $app->get('/example', function() {
 	        }
 	        $string .= urlencode($key) . '=' . urlencode($itemVal);
 	    }
-
+	    //根据秘钥生成加密串
 	    return urlencode(base64_encode(hash_hmac('sha1', $string, $appSecret, true)));
 
     };
+    $params['signature'] = call_user_func($createSign, $params);
 
-    // POST 请求
-    $requestUrl = function($data) {
-    	$url = 'http://php.dev/api/token';
-	    $response = curl($url, [], $data, 'POST');
+    // STEP 2: 携带签名请求测试接口
+    $url = 'http://php.dev/api/v1/product/2';
+    $result = curl($url, $params, [], 'GET');
 
-	    return $response;
-    };
-
-    // 获取 Access Token
-	$accessToken = function() use ($appID, $appSecret, &$createSign, &$requestUrl) {
-		// 组装请求参数
-		$data = [
-	        //系统基本参数
-	        'app_id'    => $appID,
-	        'app_secret'=> $appSecret,
-	        'timestamp' => date('Y-m-d H:i:s'),
-	    ];
-
-	    $data['signature'] = call_user_func($createSign, $data);
-	    $token = call_user_func($requestUrl, $data);
-
-	    return isset($token['data']['access_token']) ? $token['data']['access_token'] : '';
-	};
-
-	// 全局唯一接口调用凭证, 有效期3600秒
-	$token    = $accessToken();
-
-	if (empty($token)) {
-		die('请求token失败');
-	}
-
-	// 通过 Access Token 获取测试接口数据
-
-	$apiUrl = 'http://php.dev/api/v1/products';
-	$data = [
-				'access_token' => $token
-		    ];
-    $data['signature'] = call_user_func($createSign, $data);
-    $result = curl($apiUrl, $data, [], 'GET');
-
-    p($result);
+    p($result);die;
 });

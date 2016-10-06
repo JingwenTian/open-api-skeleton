@@ -1,17 +1,18 @@
 <?php 
 
 /**
- * 获取 Access Token
+ * 获取access_token
+ * access_token是全局唯一接口调用凭据
  */
 
 use helper\Api\ApiVerifyAuth;
 use helper\Api\ApiException;
 use helper\Api\Conf\ApiConf;
 
-$app->post('/api/token', function($request, $response, $args = []) use ($app) {
+$app->map( ['GET', 'POST'], '/api/token', function($request, $response, $args = []) use ($app) {
 
-	$appId = $request->getParam('app_id', '');
-	$appSecret = $request->getParam('app_secret', '');
+	$appId = $request->getParam('app_id', ''); // 第三方用户唯一凭证
+	$appSecret = $request->getParam('app_secret', ''); // 第三方用户唯一凭证密钥
 
 	$authHelper = new ApiVerifyAuth();
 
@@ -27,7 +28,7 @@ $app->post('/api/token', function($request, $response, $args = []) use ($app) {
 
 	$response = [
 					'access_token' 	=> $accessToken, //全局唯一接口调用凭证
-					'expires_in' 	=> ApiConf::OAUTH2_DEFAULT_ACCESS_TOKEN_LIFETIME, //凭证有效时间，单位：秒
+					'expires_in' 	=> ApiConf::OAUTH2_ACCESS_TOKEN_EXPIRES, //凭证有效时间，单位：秒
 				];
 
 	$app->responseHandeler(ApiConf::SUCCESS_CODE, 'access token fetch success', $response);

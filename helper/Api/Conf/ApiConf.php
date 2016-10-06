@@ -4,9 +4,9 @@ namespace helper\Api\Conf;
 
 class ApiConf
 {
-	const OAUTH2_DEFAULT_ACCESS_TOKEN_LIFETIME = 3600; //Access Token生存时间
-	const OAUTH2_ACCESS_TOKEN_SALT = "eba7aa43d165fc6bf49c0549a8a55d35"; //token加密
-	const OAUTH2_ACCESS_TOKEN_LENGTH = 64; //token长度
+	const OAUTH2_ACCESS_TOKEN_EXPIRES 	= 3600; //Access Token生存时间
+	const OAUTH2_ACCESS_TOKEN_SALT 		= "eba7aa43d165fc6bf49c0549a8a55d35"; //token加密
+	const OAUTH2_ACCESS_TOKEN_LENGTH 	= 64; //token长度
 
 
 	const SUCCESS_CODE           			= 10000; //成功返回码
