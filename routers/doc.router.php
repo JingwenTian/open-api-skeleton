@@ -4,14 +4,8 @@
  * Open Api 说明文档
  */
 
-$app->get('/doc', function ($req, $res, $args) {
-	return $res->withStatus(302)->withHeader('Location', '/v1/doc');
-});
-
-$app->group('/v1', function() {
-
-	$this->get('/doc', function($request, $response, $args) {
-		echo 'api document';
-	});
+$app->get('/api/doc', function($request, $response, $args) {
+	
+	return $this->renderer->render($response, 'doc/index.phtml', $args);
 
 });
